@@ -334,34 +334,28 @@ int main(void)
 
 		l = listaPQPV.prox;
 		while(l != NULL){
-			deltaP_Q[i] = consP(l->m,barras,ligacoes) - (barras[l->m].pg - barras[l->m].pc);
-			printf("%lf\n", deltaP_Q[i]);
-			
+
+			int k = l->m;
+
+			deltaP_Q[i] = consP(k,barras,ligacoes) - (barras[k].pg - barras[k].pc);
 			
 
-			/*lig = ligacoes[l->m].prox;
-			printf("K %d\n", l->m);
-
-			printf("Pcalc - (pg - pc) = %lf\n", deltaP_Q[i]);
+			lig = ligacoes[l->m].prox;
 
 			while(lig != NULL){
-				double tKM = barras[l->m].theta - barras[lig->j].theta;
+				int m = lig->j;
+
+				double tKM = barras[k].theta - barras[m].theta;
 				if (lig->info->tipo != 0)
 				{
-					printf("Aux: %lf\n", (lig->g * pow(lig->info->tap,2) * pow(barras[l->m].v,2) - lig->info->tap * barras[l->m].v * barras[lig->j].v * (lig->g * cos(tKM) + lig->b * sin(tKM))));
-					deltaP_Q[i] -= (lig->g * pow(lig->info->tap,2) * pow(barras[l->m].v,2) - lig->info->tap * barras[l->m].v * barras[lig->j].v * (lig->g * cos(tKM) + lig->b * sin(tKM)));
+					deltaP_Q[i] -= (lig->info->g * pow(lig->info->tap,2) * pow(barras[k].v,2) - lig->info->tap * barras[k].v * barras[m].v * (lig->info->g * cos(tKM) + lig->info->b * sin(tKM)));
 				} else {
-					printf("M %d: %lf\n", lig->j,(lig->g * pow(barras[l->m].v,2) - lig->info->tap * barras[l->m].v * barras[lig->j].v * (lig->g * cos(tKM) + lig->b * sin(tKM))));
-					deltaP_Q[i] -= (lig->g * pow(barras[l->m].v,2) - lig->info->tap * barras[l->m].v * barras[lig->j].v * (lig->g * cos(tKM) + lig->b * sin(tKM)));
+					deltaP_Q[i] -= (lig->info->g * pow(barras[k].v,2) - lig->info->tap * barras[k].v * barras[m].v * (lig->info->g * cos(tKM) + lig->info->b * sin(tKM)));
 				}
 
 
 				lig = lig->prox;
 			}
-
-			printf("DP = %lf\n", deltaP_Q[i]);*/
-			
-
 
 			if (continua == 0 && (fabs(deltaP_Q[i]) > erro ))
 			{
@@ -374,29 +368,27 @@ int main(void)
 
 		l = listaPQ.prox;
 		while(l != NULL){
+			int k = l->m;
+
 			deltaP_Q[i] = consQ(l->m,barras,ligacoes) - (barras[l->m].qg - barras[l->m].qc);
-			printf("%lf\n", deltaP_Q[i]);
 
-			/*lig = ligacoes[l->m].prox;
-
-			printf("K %d\n", l->m);
-			printf("Qcalc - (qg - qc) = %lf\n", deltaP_Q[i]);
+			lig = ligacoes[l->m].prox;
 
 			while(lig != NULL){
-				double tKM = barras[l->m].theta - barras[lig->j].theta;
+				int m = lig->j;
+
+				double tKM = barras[k].theta - barras[m].theta;
 				if (lig->info->tipo != 0)
 				{
-					deltaP_Q[i] -= ( -(lig->b * pow(lig->info->tap,2) + lig->info->bsh) * pow(barras[l->m].v,2) + barras[l->m].v * barras[lig->j].v * (lig->b * cos(tKM) - lig->g * sin(tKM)));
+					deltaP_Q[i] -= ( -(lig->info->b * pow(lig->info->tap,2) + lig->info->bsh) * pow(barras[k].v,2) + barras[k].v * barras[m].v * (lig->info->b * cos(tKM) - lig->info->g * sin(tKM)));
 				} else {
-					printf("M %d: %lf\n", lig->j,( -(lig->b + lig->info->bsh) * pow(barras[l->m].v,2) + barras[l->m].v * barras[lig->j].v * (lig->b * cos(tKM) - lig->g * sin(tKM))));
-					deltaP_Q[i] -= ( -(lig->b + lig->info->bsh) * pow(barras[l->m].v,2) + barras[l->m].v * barras[lig->j].v * (lig->b * cos(tKM) - lig->g * sin(tKM)));
+					deltaP_Q[i] -= ( -(lig->info->b) * pow(barras[k].v,2) + barras[k].v * barras[m].v * (lig->info->b * cos(tKM) - lig->info->g * sin(tKM)));
 				}
 
 				lig = lig->prox;
 			}
 
-			printf("DQ = %lf\n", deltaP_Q[i]);*/
-
+			printf("%lf\n", deltaP_Q[i]);
 
 			if (continua == 0 && (fabs(deltaP_Q[i]) > erro ))
 			{

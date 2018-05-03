@@ -56,6 +56,8 @@ typedef struct{
 	double passo;
 	double ctrlMin;
 	double ctrlMax;
+	double g;
+	double b;
 	struct lig *pI;
 	struct lig *pJ;
 }infoLigacao;

@@ -138,7 +138,7 @@ void inicializarLigacoes(barra barras[],ligacao ligacoes [], int nB){
 	{
 		ligacoes[i].j = i;
 		ligacoes[i].g = barras[i].gsh;
-		ligacoes[i].b = barras[i].bsh;
+		ligacoes[i].b = -barras[i].bsh;
 		ligacoes[i].info = NULL;
 		ligacoes[i].prox = NULL;
 	}
@@ -207,6 +207,8 @@ void carregarLigacoes(FILE *arq,barra barras[], ligacao ligacoes []){
 
 		gkm = novaLigacao->r/(pow(novaLigacao->r,2)+pow(novaLigacao->x,2));
 		bkm = -novaLigacao->x/(pow(novaLigacao->r,2)+pow(novaLigacao->x,2));
+		novaLigacao->g = gkm;
+		novaLigacao->b = bkm;
 
 		ligI->g = - sin(novaLigacao->phi)*(novaLigacao->tap)*bkm - cos(novaLigacao->phi)*(novaLigacao->tap)*gkm;
 		ligI->b = sin(novaLigacao->phi)*(novaLigacao->tap)*gkm - cos(novaLigacao->phi)*(novaLigacao->tap)*bkm;
