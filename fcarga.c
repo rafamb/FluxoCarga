@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "lerCDF.h"
-#include "gauss.h"
+#include "gaussprof.h"
 
 
 //
@@ -16,6 +16,7 @@ double consP(int k,barra barras[],ligacao ligacoes []){
 	ligacao * lig = &ligacoes[k];
 	while(lig != NULL){
 		m = lig->j ;
+
 		tKM = barras[k].theta - barras[m].theta;
 
 		expr += barras[k].v * (barras[m].v*(lig->g*cos(tKM) + lig->b*sin(tKM)));
@@ -38,6 +39,7 @@ double consQ(int k,barra barras[],ligacao ligacoes []){
 	ligacao * lig = &ligacoes[k];
 	while(lig != NULL){
 		m = lig->j ;
+
 		tKM = barras[k].theta - barras[m].theta;
 
 		expr += barras[k].v * (barras[m].v*(lig->g*sin(tKM) - lig->b*cos(tKM)));
@@ -47,24 +49,6 @@ double consQ(int k,barra barras[],ligacao ligacoes []){
 
 
 	return expr;
-}
-
-
-//
-// FINDLIGACAO: RETORNA A LIGACAO DA BARRA K PARA M
-//
-ligacao * findLigacao(int k,int m, ligacao ligacoes[]){
-	ligacao * lig = &ligacoes[k];
-	while(lig != NULL){
-		if (lig->j == m)
-		{
-			return lig;
-		}
-		lig = lig->prox;
-
-	}
-	return NULL;
-
 }
 
 
@@ -107,22 +91,31 @@ double matrizM(int k,int m,barra barras [],ligacao ligacoes [],ligacao * lig){
 }
 
 
-//
-// MATRIZL: RETORNA O VALOR CALCULADO PARA Lkm
-//
-double matrizL(int k,int m,barra barras [],ligacao ligacoes [],ligacao * lig){
-	if(m != k){
-		return  (barras[k].v*(lig->g*sin(barras[k].theta-barras[m].theta) - lig->b*cos(barras[k].theta-barras[m].theta)));
+//FUNCAO AUXILIAR PARA CALCULO DO ELEMENTO Lkk
+double auxL(int k,barra barras[],ligacao ligacoes []){
+	double expr = 0.0;
+	double tKM;
+	int m;
+	ligacao * lig = ligacoes[k].prox;
+	while(lig != NULL){
+		m = lig->j ;
+
+		tKM = barras[k].theta - barras[m].theta;
+
+		expr +=2*(lig->info->bsh*barras[k].v) - (barras[m].v*(lig->g*sin(tKM) - lig->b*cos(tKM)));
+
+		lig = lig->prox;
 	}
-	else{
-		return pow(barras[k].v,-1)*(consQ(k,barras,ligacoes) - pow(barras[k].v,2)*lig->b) ;
-	}
+
+
+	return expr;
 }
+
 	
 //
 // CONSSISTEMA: CONSTROI O SISTEMA LINEAR A SER RESOLVIDO PELO METODO DE GAUSS
 //
-void consSistema(int nlinhas,int ncolunas, double jac [nlinhas][ncolunas], barra barras [], ligacao ligacoes [], double deltaP_Q [], lista listaPQPV, lista listaPQ){
+void consSistema(int nlinhas,double jac [nlinhas][nlinhas], barra barras [], ligacao ligacoes [], lista listaPQPV, lista listaPQ){
 	int i,j;
 	lista * li, * lj;
 	ligacao * lig;
@@ -139,15 +132,30 @@ void consSistema(int nlinhas,int ncolunas, double jac [nlinhas][ncolunas], barra
 		// PARA CADA BARRA (lj->m => m) PQ OU PV
 		lj = listaPQPV.prox;
 		while(lj != NULL){
+			int k = li->m;
+			int m = lj->m;
 
-			//ENCONTRA LIGACAO ENTRE k e m
-			lig = findLigacao(li->m,lj->m,ligacoes);
+			jac[i][j] = 0.0;
 
-			//SE HA LIGACAO CALCULA Hkm
-			if (lig != NULL)
-				jac[i][j] = -matrizH(li->m,lj->m,barras,ligacoes,lig);
-			else
-				jac[i][j] = 0.0;
+			
+			//AQUI BUSCA TODAS AS LIGACOES ENTRE K E M 
+			//APOS ISSO CALCULA-SE Hkm
+			if (k == m){
+
+				jac[i][j] = -matrizH(k,k,barras,ligacoes,&ligacoes[k]);
+
+			} else {
+
+				lig = &ligacoes[k];
+				while(lig != NULL){
+					if (lig->j == m)
+					{
+						jac[i][j] += -matrizH(li->m,lj->m,barras,ligacoes,lig);
+					}
+					lig = lig->prox;
+
+				}
+			}
 
 			lj = lj->prox;
 			j++;
@@ -157,21 +165,35 @@ void consSistema(int nlinhas,int ncolunas, double jac [nlinhas][ncolunas], barra
 		lj = listaPQ.prox;
 		while(lj != NULL){
 
-			//ENCONTRA LIGACAO ENTRE k e m
-			lig = findLigacao(li->m,lj->m,ligacoes);
+			int k = li->m;
+			int m = lj->m;
 
-			//SE HA LIGACAO CALCULA Nkm
-			if (lig != NULL)
-				jac[i][j] = -matrizN(li->m,lj->m,barras,ligacoes,lig);
-			else
-				jac[i][j] = 0.0;
+			jac[i][j] = 0.0;
+
+			
+			//AQUI BUSCA TODAS AS LIGACOES ENTRE K E M 
+			//APOS ISSO CALCULA-SE Nkm
+			if (k == m){
+
+				jac[i][j] = -matrizN(k,k,barras,ligacoes,&ligacoes[k]);
+
+			} else {
+
+				lig = &ligacoes[k];
+				while(lig != NULL){
+					if (lig->j == m)
+					{
+						jac[i][j] += -matrizN(li->m,lj->m,barras,ligacoes,lig);
+					}
+					lig = lig->prox;
+
+				}
+			}
 
 			lj = lj->prox;
 			j++;
 		}
 
-		// SETA NA ULTIMA COLUNA DO SISTEMA O ELEMENTO deltaP_Q
-		jac [i][j] = deltaP_Q[i];
 		li = li->prox;
 		i++;
 	}
@@ -186,14 +208,30 @@ void consSistema(int nlinhas,int ncolunas, double jac [nlinhas][ncolunas], barra
 		lj = listaPQPV.prox;
 		while(lj != NULL){
 
-			//ENCONTRA LIGACAO ENTRE k e m
-			lig = findLigacao(li->m,lj->m,ligacoes);
+			int k = li->m;
+			int m = lj->m;
 
-			//SE HA LIGACAO CALCULA Mkm
-			if (lig != NULL)
-				jac[i][j] = -matrizM(li->m,lj->m,barras,ligacoes,lig);
-			else
-				jac[i][j] = 0.0;
+			jac[i][j] = 0.0;
+
+			
+			//AQUI BUSCA TODAS AS LIGACOES ENTRE K E M 
+			//APOS ISSO CALCULA-SE Mkm
+			if (k == m){
+
+				jac[i][j] = -matrizM(k,k,barras,ligacoes,&ligacoes[k]);
+
+			} else {
+
+				lig = &ligacoes[k];
+				while(lig != NULL){
+					if (lig->j == m)
+					{
+						jac[i][j] += -(-barras[k].v*barras[m].v*(lig->g*cos(barras[k].theta-barras[m].theta) + lig->b*sin(barras[k].theta-barras[m].theta)));
+					}
+					lig = lig->prox;
+
+				}
+			}
 
 			lj = lj->prox;
 			j++;
@@ -203,14 +241,118 @@ void consSistema(int nlinhas,int ncolunas, double jac [nlinhas][ncolunas], barra
 		lj = listaPQ.prox;
 		while(lj != NULL){
 
-			//ENCONTRA LIGACAO ENTRE k e m
-			lig = findLigacao(li->m,lj->m,ligacoes);
+			int k = li->m;
+			int m = lj->m;
 
-			//SE HA LIGACAO CALCULA Lkm
-			if (lig != NULL)
-				jac[i][j] = -matrizL(li->m,lj->m,barras,ligacoes,lig);
-			else
-				jac[i][j] = 0.0;
+			jac[i][j] = 0.0;
+
+			
+			//AQUI BUSCA TODAS AS LIGACOES ENTRE K E M 
+			//APOS ISSO CALCULA-SE Lkm
+			if (k == m){
+
+				jac[i][j] = (2*(ligacoes[k].b*barras[k].v) + auxL(k,barras,ligacoes));
+
+			} else {
+
+				lig = &ligacoes[k];
+				while(lig != NULL){
+					if (lig->j == m)
+					{
+						jac[i][j] += -(barras[k].v*(lig->g*sin(barras[k].theta-barras[m].theta) - lig->b*cos(barras[k].theta-barras[m].theta)));
+					}
+					lig = lig->prox;
+
+				}
+			}
+
+			lj = lj->prox;
+			j++;
+		}
+
+		li = li->prox;
+		i++;
+	}
+
+}
+
+/*//
+// CONSSISTEMA: CONSTROI O SISTEMA LINEAR A SER RESOLVIDO PELO METODO DE GAUSS
+//
+void consSistema(int nlinhas, int ncolunas,double jac [nlinhas][ncolunas], barra barras [], ligacao ligacoes [],double deltaP_Q [], lista listaPQPV, lista listaPQ){
+	int i,j;
+	lista * li, * lj;
+	ligacao * lig;
+	
+
+	i = 0;
+
+
+	// PARA CADA BARRA (li->m => k) PQ OU PV
+	li = listaPQPV.prox;
+	while(li != NULL){
+		j = 0;
+
+		// PARA CADA BARRA (lj->m => m) PQ OU PV
+		lj = listaPQPV.prox;
+		while(lj != NULL){
+			int k = li->m;
+			int m = lj->m;
+
+			jac[i][j] = 0.0;
+
+			
+			//AQUI BUSCA TODAS AS LIGACOES ENTRE K E M 
+			//APOS ISSO CALCULA-SE Hkm
+			if (k == m){
+
+				jac[i][j] = -matrizH(k,k,barras,ligacoes,&ligacoes[k]);
+
+			} else {
+
+				lig = &ligacoes[k];
+				while(lig != NULL){
+					if (lig->j == m)
+					{
+						jac[i][j] += -matrizH(li->m,lj->m,barras,ligacoes,lig);
+					}
+					lig = lig->prox;
+
+				}
+			}
+
+			lj = lj->prox;
+			j++;
+		}
+
+		// PARA CADA BARRA (lj->m => m) PQ
+		lj = listaPQ.prox;
+		while(lj != NULL){
+
+			int k = li->m;
+			int m = lj->m;
+
+			jac[i][j] = 0.0;
+
+			
+			//AQUI BUSCA TODAS AS LIGACOES ENTRE K E M 
+			//APOS ISSO CALCULA-SE Nkm
+			if (k == m){
+
+				jac[i][j] = -matrizN(k,k,barras,ligacoes,&ligacoes[k]);
+
+			} else {
+
+				lig = &ligacoes[k];
+				while(lig != NULL){
+					if (lig->j == m)
+					{
+						jac[i][j] += -matrizN(li->m,lj->m,barras,ligacoes,lig);
+					}
+					lig = lig->prox;
+
+				}
+			}
 
 			lj = lj->prox;
 			j++;
@@ -218,16 +360,96 @@ void consSistema(int nlinhas,int ncolunas, double jac [nlinhas][ncolunas], barra
 
 		// SETA NA ULTIMA COLUNA DO SISTEMA O ELEMENTO deltaP_Q
 		jac [i][j] = deltaP_Q[i];
+
 		li = li->prox;
 		i++;
 	}
 
-}
+
+	// PARA CADA BARRA (li->m => k) PQ
+	li = listaPQ.prox;
+	while(li != NULL){
+		j = 0;
+
+		// PARA CADA BARRA (lj->m => m) PQ OU PV
+		lj = listaPQPV.prox;
+		while(lj != NULL){
+
+			int k = li->m;
+			int m = lj->m;
+
+			jac[i][j] = 0.0;
+
+			
+			//AQUI BUSCA TODAS AS LIGACOES ENTRE K E M 
+			//APOS ISSO CALCULA-SE Mkm
+			if (k == m){
+
+				jac[i][j] = -matrizM(k,k,barras,ligacoes,&ligacoes[k]);
+
+			} else {
+
+				lig = &ligacoes[k];
+				while(lig != NULL){
+					if (lig->j == m)
+					{
+						jac[i][j] += -(-barras[k].v*barras[m].v*(lig->g*cos(barras[k].theta-barras[m].theta) + lig->b*sin(barras[k].theta-barras[m].theta)));
+					}
+					lig = lig->prox;
+
+				}
+			}
+
+			lj = lj->prox;
+			j++;
+		}
+
+		// PARA CADA BARRA (lj->m => m) PQ
+		lj = listaPQ.prox;
+		while(lj != NULL){
+
+			int k = li->m;
+			int m = lj->m;
+
+			jac[i][j] = 0.0;
+
+			
+			//AQUI BUSCA TODAS AS LIGACOES ENTRE K E M 
+			//APOS ISSO CALCULA-SE Lkm
+			if (k == m){
+
+				jac[i][j] = (2*(ligacoes[k].b*barras[k].v) + auxL(k,barras,ligacoes));
+
+			} else {
+
+				lig = &ligacoes[k];
+				while(lig != NULL){
+					if (lig->j == m)
+					{
+						jac[i][j] += -(barras[k].v*(lig->g*sin(barras[k].theta-barras[m].theta) - lig->b*cos(barras[k].theta-barras[m].theta)));
+					}
+					lig = lig->prox;
+
+				}
+			}
+
+			lj = lj->prox;
+			j++;
+		}
+
+		// SETA NA ULTIMA COLUNA DO SISTEMA O ELEMENTO deltaP_Q
+		jac [i][j] = deltaP_Q[i];
+
+		li = li->prox;
+		i++;
+	}
+
+}*/
 
 
 int main(void)
 {
-	char arquivo[]="ieee14cdf.txt";
+	char arquivo[]="ieee57cdf.txt";
 	FILE *arq;
 	double baseMVA;
 	int nB;
@@ -308,16 +530,16 @@ int main(void)
 	double erro = pow(10,-4);
 
 	int nIteracoes = 0;
+	int convergiu = 1;
 
 
 
 	while(1){
-		
-		//printf("%d\n", nIteracoes);
 
 		if (nIteracoes >= 10)
 		{
 			printf("NUMERO DE ITERACOES MAXIMO ATINGIDO, PROVAVELMENTE O SISTEMA NAO CONVERGE!\n");
+			convergiu = 0;
 			break;
 		}
 
@@ -329,33 +551,18 @@ int main(void)
 
 		int i = 0;
 		lista * l;
-		ligacao * lig;
 
+		printf("P\n");
 
 		l = listaPQPV.prox;
 		while(l != NULL){
 
 			int k = l->m;
 
-			deltaP_Q[i] = consP(k,barras,ligacoes) - (barras[k].pg - barras[k].pc);
-			
+			deltaP_Q[i] = -(barras[k].pg - barras[k].pc - consP(k,barras,ligacoes));
 
-			lig = ligacoes[l->m].prox;
+			printf("%.5lf\n", -deltaP_Q[i]);
 
-			while(lig != NULL){
-				int m = lig->j;
-
-				double tKM = barras[k].theta - barras[m].theta;
-				if (lig->info->tipo != 0)
-				{
-					deltaP_Q[i] -= (lig->info->g * pow(lig->info->tap,2) * pow(barras[k].v,2) - lig->info->tap * barras[k].v * barras[m].v * (lig->info->g * cos(tKM) + lig->info->b * sin(tKM)));
-				} else {
-					deltaP_Q[i] -= (lig->info->g * pow(barras[k].v,2) - lig->info->tap * barras[k].v * barras[m].v * (lig->info->g * cos(tKM) + lig->info->b * sin(tKM)));
-				}
-
-
-				lig = lig->prox;
-			}
 
 			if (continua == 0 && (fabs(deltaP_Q[i]) > erro ))
 			{
@@ -366,29 +573,16 @@ int main(void)
 			i++;
 		}
 
+		printf("Q\n");
+
 		l = listaPQ.prox;
 		while(l != NULL){
 			int k = l->m;
 
-			deltaP_Q[i] = consQ(l->m,barras,ligacoes) - (barras[l->m].qg - barras[l->m].qc);
+			deltaP_Q[i] = -((barras[k].qg - barras[k].qc) - consQ(k,barras,ligacoes));
 
-			lig = ligacoes[l->m].prox;
-
-			while(lig != NULL){
-				int m = lig->j;
-
-				double tKM = barras[k].theta - barras[m].theta;
-				if (lig->info->tipo != 0)
-				{
-					deltaP_Q[i] -= ( -(lig->info->b * pow(lig->info->tap,2) + lig->info->bsh) * pow(barras[k].v,2) + barras[k].v * barras[m].v * (lig->info->b * cos(tKM) - lig->info->g * sin(tKM)));
-				} else {
-					deltaP_Q[i] -= ( -(lig->info->b) * pow(barras[k].v,2) + barras[k].v * barras[m].v * (lig->info->b * cos(tKM) - lig->info->g * sin(tKM)));
-				}
-
-				lig = lig->prox;
-			}
-
-			printf("%lf\n", deltaP_Q[i]);
+			printf("%.5lf\n", -deltaP_Q[i]);
+			
 
 			if (continua == 0 && (fabs(deltaP_Q[i]) > erro ))
 			{
@@ -406,14 +600,25 @@ int main(void)
 			break;
 		}
 
-		double sistema [2*nPQ+nPV][2*nPQ+nPV+1];
+		double jac [2*nPQ+nPV][2*nPQ+nPV];
+		//double sistema [2*nPQ+nPV][2*nPQ+nPV+1];
 		double x [2*nPQ+nPV];
-		consSistema(2*nPQ+nPV,2*nPQ+nPV+1,sistema,barras,ligacoes,deltaP_Q, listaPQPV,listaPQ);
+		//consSistema(2*nPQ+nPV,2*nPQ+nPV+1,sistema,barras,ligacoes,deltaP_Q, listaPQPV,listaPQ);
+		consSistema(2*nPQ+nPV,jac,barras,ligacoes,listaPQPV,listaPQ);
+
+		/*int j;
+		for (i = 0; i < 2*nPQ+nPV; i++)
+		{
+			for (j = 0; j <= 2*nPQ+nPV; j++ ){
+				printf("%.5lf;", sistema[i][j]);
+			}
+			printf("\n");
+		}*/
 
 
-		gauss_parcial(2*nPQ+nPV,2*nPQ+nPV+1,sistema,x);
+		gauss_parcial(2*nPQ+nPV,jac,deltaP_Q,x);
+		//gauss_parcial(2*nPQ+nPV,2*nPQ+nPV+1,sistema,x);
 		
-		printf("\n");
 
 		lista * li;
 		li = listaPQPV.prox;
@@ -434,7 +639,12 @@ int main(void)
 			li = li->prox;
 		}
 
-		break;
+		/*for (i = 0; i < nB; i++)
+		{
+			printf("%d: V: %lf Theta: %lf\n", i+1,barras[i].v,barras[i].theta);
+		}*/
+
+		//break;
 	
 		
 
@@ -465,7 +675,7 @@ int main(void)
 
 	for (i = 0; i < nB; i++)
 	{
-		//printf("%d: V: %lf Theta: %lf P: %lf Q: %lf\n", i+1,barras[i].v,barras[i].theta,barras[i].p,barras[i].q);
+		printf("%d: V: %lf Theta: %lf P: %lf Q: %lf\n", i+1,barras[i].v,barras[i].theta,barras[i].p,barras[i].q);
 	}
 
 
@@ -474,8 +684,6 @@ int main(void)
 	liberarMemoriaLigacoes(ligacoes,nB);
 	liberarLista(&listaPQPV);
 	liberarLista(&listaPQ);
-
-	//printLigacoes(ligacoes,nB);	
 	
 	return 0;
 }

@@ -66,15 +66,4 @@ void gauss_parcial(int nlinhas, int ncolunas, double sistema[nlinhas][ncolunas],
 		x[k]=(sistema[k][ncolunas-1]-aux)/sistema[k][k];
 	}
 
-	for (i = 0; i < nlinhas; i++)
-	{
-		if (indices[i] != i)
-		{
-			aux = x[i];
-			x[i] = x[indices[i]];
-			x[indices[i]] = aux;
-			indices[indices[i]] = indices[i];
-			indices[i] = i;
-		}
-	}
 }
