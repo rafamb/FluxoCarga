@@ -35,7 +35,7 @@ void gauss_parcial(int ordem, double a[ordem][ordem], double b [ordem],double x 
 		{
 			auxI2 = ordemEqs[i];
 			ordemEqs[i] = ordemEqs[auxI1];
-			ordemEqs[auxI1] = ordemEqs[auxI2];
+			ordemEqs[auxI1] = auxI2;
 
 			for (k = 0; k < ordem; k++)
 			{
