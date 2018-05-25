@@ -2,6 +2,15 @@
 
 #define PI 3.14159265
 
+#define MOD_GUILHERME 0
+#define MOD 1
+
+#define TAP 1
+#define IMPEDANCIA 0
+
+
+int modo;
+
 FILE * carregarArquivo(char arquivo []){
 	FILE *arq;
 	arq = fopen(arquivo, "r");
@@ -9,6 +18,24 @@ FILE * carregarArquivo(char arquivo []){
 		printf("Erro, nao foi possivel abrir o arquivo\n");
 		return NULL;
 	} else {
+		char aux[6];
+		int i = 0;
+
+		do {
+			aux[i] = fgetc(arq);
+			i++;
+		}while(i < 5);
+
+		if (strcmp(aux,"TAPE\n"))
+		{
+			modo = MOD_GUILHERME;
+		}
+		else
+		{
+			modo = MOD;
+			fseek(arq,0,SEEK_SET);
+		}
+
 		return arq;
 	}
 }
@@ -22,22 +49,68 @@ int carregarBaseMVA(FILE * arq){
 }
 
 int carregarnB(FILE * arq){
-	int nB;
-	int volta = 0;
-	char c;
+	int nB,aux;
+	ssize_t volta = 0;
+	char * c = NULL;
+	size_t len = 0;
 	fscanf(arq,"%*d ITEMS\n");
 
 	do{
-		fscanf(arq,"%d",&nB);
-		//printf("b %d\n", nB);
+
+		fscanf(arq,"%d",&aux);
+		if (aux != -999)
+		{
+			nB = aux;
+		}
+		else
+		{
+			break;
+		}
+
+		volta += getline(&c,&len,arq) + sizeof(int);
+
+	}while(1);
+
+	fseek(arq,-(volta+4),SEEK_CUR);
+	/*nB = volta/(130+sizeof(int)) -1;*/
+
+	/*if (modo == MOD)
+	{
+		do{
+			fscanf(arq,"%d",&nB);
+			
+			
+			fseek(arq,125,SEEK_CUR);
+			volta = volta + 125 + sizeof(nB);
+		}while(nB != -999);
 		
-		fseek(arq,125,SEEK_CUR);
-		volta = volta + 125 + sizeof(nB);
-	}while(nB != -999);
+		
+		fseek(arq,-volta+2,SEEK_CUR);
+		nB = volta/(125+sizeof(int)) -1;
+	}
+	else 
+	{
+		do{
+			fscanf(arq,"%d",&nB);
+			
+			fseek(arq,130,SEEK_CUR);
+			volta = volta + 130 + sizeof(nB);
+		}while(nB != -999);
+		
+		
+		fseek(arq,-volta+2,SEEK_CUR);
+		nB = volta/(130+sizeof(int)) -1;
+	}*/
+	/*getline(&c,&len,arq);
+	printf("%s\n", c);*/
+
+
+	if (c)
+	{
+		free(c);
+	}
+
 	
-	
-	fseek(arq,-volta+2,SEEK_CUR);
-	nB = volta/(125+sizeof(int)) -1;
 	
 	return nB;
 }
@@ -53,6 +126,7 @@ void carregarBarras(FILE *arq, barra barras [], double baseMVA, int * nPQ, int *
 			count++;
 		}while(count < 12);
 		fscanf(arq, "%d %d %d %lf %lf %lf %lf %lf %lf %lf %lf",&barras[i-1].area,&barras[i-1].zonaPerdas,&barras[i-1].tipo,&barras[i-1].v,&barras[i-1].theta,&barras[i-1].pc,&barras[i-1].qc,&barras[i-1].pg,&barras[i-1].qg,&barras[i-1].baseKV,&barras[i-1].vgO);
+		barras[i-1].vEsp = barras[i-1].v;
 		barras[i-1].theta = barras[i-1].theta*PI/180.0;
 		barras[i-1].pc = barras[i-1].pc/baseMVA;
 		barras[i-1].qc = barras[i-1].qc/baseMVA;
@@ -107,6 +181,13 @@ void carregarBarras(FILE *arq, barra barras [], double baseMVA, int * nPQ, int *
 		}
 
 		fscanf(arq, "%lf %lf %lf",&barras[i-1].gsh,&barras[i-1].bsh,&barras[i-1].ctrlREM);
+		
+
+		if (modo == MOD_GUILHERME)
+		{
+			fscanf(arq, "%*d");
+		}
+		
 		count = 0;
 		fscanf(arq,"%d",&i);
 	}
@@ -127,8 +208,6 @@ void solucaoInicial(barra barras [], int nB, int ref){
 		{
 			barras[i].theta = barras[ref].theta;
 		}
-		barras[i].p = barras[i].pg - barras[i].pc;
-		barras[i].q = barras[i].qg - barras[i].qc;
 	}
 }
 
@@ -137,8 +216,6 @@ void inicializarLigacoes(barra barras[],ligacao ligacoes [], int nB){
 	for (int i = 0; i < nB; ++i)
 	{
 		ligacoes[i].j = i;
-		ligacoes[i].g = barras[i].gsh;
-		ligacoes[i].b = barras[i].bsh;
 		ligacoes[i].info = NULL;
 		ligacoes[i].prox = NULL;
 	}
@@ -177,7 +254,7 @@ void carregarLigacoes(FILE *arq,barra barras[], ligacao ligacoes []){
 			novaLigacao->tap = 1.0;
 		}
 
-		novaLigacao->tap = 1/novaLigacao->tap;
+		/*novaLigacao->tap = 1/novaLigacao->tap;*/
 
 		if (novaLigacao->tipo == 2 || novaLigacao->tipo == 3){
 			fscanf(arq,"%lf %lf %lf %lf %lf",&novaLigacao->tapMin,&novaLigacao->tapMax,&novaLigacao->passo,&novaLigacao->ctrlMin,&novaLigacao->ctrlMax);
@@ -210,21 +287,39 @@ void carregarLigacoes(FILE *arq,barra barras[], ligacao ligacoes []){
 		novaLigacao->g = gkm;
 		novaLigacao->b = bkm;
 
-		ligI->g = - sin(novaLigacao->phi)*(novaLigacao->tap)*bkm - cos(novaLigacao->phi)*(novaLigacao->tap)*gkm;
+		/*ligI->g = - sin(novaLigacao->phi)*(novaLigacao->tap)*bkm - cos(novaLigacao->phi)*(novaLigacao->tap)*gkm;
 		ligI->b = sin(novaLigacao->phi)*(novaLigacao->tap)*gkm - cos(novaLigacao->phi)*(novaLigacao->tap)*bkm;
 
 		ligJ->g = - sin(-novaLigacao->phi)*(novaLigacao->tap)*bkm - cos(-novaLigacao->phi)*(novaLigacao->tap)*gkm;
 		ligJ->b = sin(-novaLigacao->phi)*(novaLigacao->tap)*gkm - cos(-novaLigacao->phi)*(novaLigacao->tap)*bkm;
 
 		ligacoes[i-1].g = ligacoes[i-1].g + pow(novaLigacao->tap,2)*gkm;
-		ligacoes[i-1].b = ligacoes[i-1].b + pow(novaLigacao->tap,2)*bkm; //+ novaLigacao->bsh;
+		ligacoes[i-1].b = ligacoes[i-1].b + pow(novaLigacao->tap,2)*bkm + novaLigacao->bsh;
 
 		ligacoes[j-1].g = ligacoes[j-1].g + pow(novaLigacao->tap,2)*gkm;
-		ligacoes[j-1].b = ligacoes[j-1].b + pow(novaLigacao->tap,2)*bkm; //+ novaLigacao->bsh;
+		ligacoes[j-1].b = ligacoes[j-1].b + pow(novaLigacao->tap,2)*bkm + novaLigacao->bsh;*/
+
+		if (novaLigacao->tipo == 0)
+		{
+			ligI->tBarra = TAP;
+			ligJ->tBarra = TAP;
+		}
+		else
+		{
+			ligI->tBarra = TAP;
+			ligJ->tBarra = IMPEDANCIA;
+		}
+
+
+		if (modo == MOD_GUILHERME)
+		{
+			fscanf(arq, "%*d");
+		}
 
 
 		fscanf(arq,"%d",&i);
 	}
+
 }
 
 void liberarMemoriaLigacoes(ligacao ligacoes [], int nB){

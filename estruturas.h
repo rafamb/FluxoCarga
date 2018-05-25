@@ -11,6 +11,7 @@ typedef struct{
 	int area;
 	int zonaPerdas;
 	int tipo;
+	double vEsp;
 	double v;
 	double theta;
 	double pc;
@@ -26,8 +27,6 @@ typedef struct{
 	double gsh;
 	double bsh;
 	double ctrlREM;
-	double p;
-	double q;
 }barra;
 
 
@@ -70,8 +69,7 @@ typedef struct{
 typedef struct lig{
 	infoLigacao * info;
 	int j;
-	double g;
-	double b;
+	int tBarra;
 	struct lig *prox;
 }ligacao;
 
@@ -88,7 +86,7 @@ typedef struct list{
 
 //
 // INSERIRLISTA: FUNCAO RESPONSAVEL POR ADICIONAR UM ELEMENTO NA LISTA, RECEBE UM NUMERO (NUM),
-// E O INSERE AO FIM DA LISTA PL
+// E O INSERE NA LISTA pL DE FORMA QUE FIQUE ORDENADA
 //
 void inserirLista(lista *pL, int num){
 	lista * elem = (lista *)malloc(sizeof(lista));
@@ -100,12 +98,74 @@ void inserirLista(lista *pL, int num){
 		pL->prox = elem;
 		pL->ant = elem;
 	} else {
-		elem->prox = NULL;
-		elem->ant = pL->ant;
-		pL->ant->prox = elem;
-		pL->ant = elem;
+		if (elem->m > pL->ant->m)
+		{
+			elem->prox = NULL;
+			elem->ant = pL->ant;
+			pL->ant->prox = elem;
+			pL->ant = elem;
+		}
+		else if (elem->m < pL->prox->m)
+		{
+			elem->prox = pL->prox;
+			elem->ant = NULL;
+			pL->prox->ant = elem;
+			pL->prox = elem;
+		}
+		else
+		{
+			lista *aux = pL->prox;
+			while(aux != NULL){
+				if (elem->m < aux->m)
+				{
+					break;
+				}
+
+				aux = aux->prox;
+			}
+
+			elem->prox = aux;
+			elem->ant = aux->ant;
+			aux->ant->prox = elem;
+			aux->ant = elem;
+		}
 	}
-	
+			
+}
+
+
+//
+// REMOVERLISTA: FUNCAO RESPONSAVEL POR REMOVER UM ELEMENTO DA LISTA, RECEBE UM NUMERO (BARRA),
+// E O REMOVE DA LISTA pL DE FORMA QUE COTINUE ORDENADA
+//
+void removerLista(lista *pL, int barra) { 
+	if((pL->prox)->prox == NULL){ 
+		free(pL->prox);
+		pL->prox = NULL;
+		pL->ant = NULL;
+	}else{
+		if((pL->prox)->m == barra){
+			pL->prox = pL->prox->prox;
+			free((pL->prox)->ant);
+			(pL->prox)->ant = NULL;
+		}else if((pL->ant)->m == barra){
+			pL->ant = pL->ant->ant;
+			free((pL->ant)->prox);
+			(pL->ant)->prox = NULL;
+		}else{
+			lista *remEle = pL->prox;
+			while(remEle != NULL){
+				if(remEle->m == barra){
+					remEle = remEle->ant;
+					remEle->prox = remEle->prox->prox;
+					free(remEle->prox->ant);
+					remEle->prox->ant = remEle;
+					break;
+				}
+				remEle = remEle->prox;
+			}
+		}
+	}
 }
 
 
