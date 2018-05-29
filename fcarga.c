@@ -2,16 +2,27 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include "estruturas.h"
 #include "lerCDF.h"
-#include "consPQ.h"
-#include "jacobiana.h"
-#include "gaussprof.h"
-#include "qlim.h"
+#include "fc.h"
 
 
-int main(void)
+int main(int argc, char *argv[])
 {
-	char arquivo[]="ieee14cdf.txt";
+	char arquivo[50];
+
+	int print = 0;
+
+	switch(argc){
+		case 1:
+			strcpy(arquivo,"ieee14cdf.txt");
+			break;
+		case 2:
+			strcpy(arquivo,argv[1]);
+			break;
+	}
+
+	
 	FILE *arq;
 	double baseMVA;
 	int nB;
@@ -36,8 +47,8 @@ int main(void)
 	// DECLARADOS OS VALORES NPQ, NPV E REF, QUE SAO O NUMERO DE BARRAS PQ, NUMERO DE BARRAS PV E 
 	// O NUMERO DA BARRA DE REFERENCIA, RESPECTIVAMENTE
 	//
-	int nPQ=0;
-	int nPV=0;
+	int nPQ = 0;
+	int nPV = 0;
 	int ref;
 
 	//
@@ -89,132 +100,17 @@ int main(void)
 	//
 	double erro = pow(10,-4);
 
-	int nIteracoes = 0;
+	//
+	// NUMERO MAXIMO DE ITARACOES
+	//
+	int nMax = 10;
 
+	//
+	// CALCULO DO FLUXO DE CARGA, RETORNANDO AS PERDAS ATIVAS TOTAIS
+	//
+	double perdas = fc(nB, ref, &nPQ, &nPV, erro, nMax, barras, ligacoes, &listaPQ, &listaPQPV);
 
-	while(1){
-
-
-		if (nIteracoes >= 10)
-		{
-			printf("NUMERO DE ITERACOES MAXIMO ATINGIDO, PROVAVELMENTE O SISTEMA NAO CONVERGE!\n");
-			goto fimProgama;
-		}
-
-
-		int continua = 0;
-
-
-		//
-		// VERIFICA QUAIS BARRAS QUE VIERAM A SER TORNAR PQ PODEM VOLTAR A SER PV
-		//
-		qLimInicio(nB, &nPQ, barras,ligacoes,&listaPQ);
-
-
-		//
-		// CRIACAO DO VETOR DE MISMATCHES
-		//
-		double deltaP_Q [2*nPQ+nPV];
-
-		int i = 0;
-		lista * l;
-
-
-		//
-		// CALCULO DO VETOR DE MISMATCHES E ANALISE SE ESTA ABAIXO DO ERRO
-		//
-		l = listaPQPV.prox;
-		while(l != NULL){
-
-			int k = l->m;
-
-			deltaP_Q[i] = -consP(k,barras,ligacoes);
-
-
-			if (continua == 0 && (fabs(deltaP_Q[i]) > erro ))
-			{
-				continua = 1;
-			}
-
-			l = l->prox;
-			i++;
-		}
-
-		l = listaPQ.prox;
-		while(l != NULL){
-			int k = l->m;
-
-			deltaP_Q[i] = -consQ(k,barras,ligacoes);
-			
-
-			if (continua == 0 && (fabs(deltaP_Q[i]) > erro ))
-			{
-				continua = 1;
-			}
-
-			l = l->prox;
-			i++;
-		}
-
-
-		//
-		// SE TODOS OS VALORES ESTAO MENORES QUE O ERRO O METODO DE NEWTON E ENCERRADO
-		//
-		if (continua == 0)
-		{
-			break;
-		}
-
-
-		//
-		// CRIACAO DA MATRIZ JACOBIANA E DO VETOR X
-		//
-		double jac [2*nPQ+nPV][2*nPQ+nPV];		
-		double x [2*nPQ+nPV];
-		
-		//
-		// CALCULO DOS ELEMENTOS DA MATRIZ JACOBIANA
-		//
-		consSistema(2*nPQ+nPV,jac,barras,ligacoes,listaPQPV,listaPQ);
-
-		//
-		// RESOLUCAO DO SISTEMA LINEAR PELO METODO DE GAUSS, COM O VETOR RESPOSTA SENDO X
-		//
-		gauss_parcial(2*nPQ+nPV,jac,deltaP_Q,x);
-
-		lista * li;
-		li = listaPQPV.prox;
-		i = 0;
-
-		//
-		// ATUALIZACAO DOS VALORES DE Vk E THETAk
-		//
-		while(li != NULL){
-			barras[li->m].theta = barras[li->m].theta + x[i];
-			i++;
-			li = li->prox;
-		}
-		li = listaPQ.prox;
-		while(li != NULL){
-			barras[li->m].v = barras[li->m].v + x[i];
-			i++;
-			li = li->prox;
-		}
-
-
-		//
-		// VERIFICA QUAIS BARRAS DE GERACAO VIOLARAM OS LIMITES DE GERACAO DE POTENCIA REATIVA,
-		// TRANSFORMANDO-AS ENTAO EM BARRAS PQ
-		//
-		qLimFinal(nB, &nPQ, barras,ligacoes,&listaPQ);
-		
-
-		nIteracoes++;
-
-	}
-
-
-	fimProgama:
+	printf("%lf\n", perdas);
 
 	liberarMemoriaLigacoes(ligacoes,nB);
 	liberarLista(&listaPQPV);

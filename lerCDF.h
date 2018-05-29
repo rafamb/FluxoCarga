@@ -1,4 +1,3 @@
-#include "estruturas.h"
 
 #define PI 3.14159265
 
@@ -341,4 +340,22 @@ void liberarMemoriaLigacoes(ligacao ligacoes [], int nB){
 			atual = ligacoes[i].prox;
 		}
 	}
+}
+
+void printSolucao(int nB, barra barras []){
+	int i;
+
+	printf("Barra\tV[p.u.]\t\tAng[rad]\tPg[p.u.]\tQg[p.u.]\tPc[p.u.]\tQc[p.u.]\n");
+
+	for(i = 0; i < nB; i++)
+	{
+		printf("%d:\t", i + 1);
+		printf("%lf\t", barras[i].v);
+		printf("%lf\t", barras[i].theta);
+		printf("%lf\t", barras[i].pg);
+		printf("%lf\t", barras[i].qg);
+		printf("%lf\t", barras[i].pc);
+		printf("%lf\n", barras[i].qc);
+	}
+
 }
