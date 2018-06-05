@@ -154,7 +154,7 @@ void carregarBarras(FILE *arq, barra barras [], double baseMVA, int * nPQ, int *
 			}
 
 			barras[i-1].vMin = 0.9;
-			barras[i-1].vMax = 1.1;
+			barras[i-1].vMax = 1.2;
 
 
 			
@@ -173,7 +173,7 @@ void carregarBarras(FILE *arq, barra barras [], double baseMVA, int * nPQ, int *
 					barras[i-1].qgMax = 0.0;
 		
 					barras[i-1].vMin = 0.9;
-					barras[i-1].vMax = 1.1;
+					barras[i-1].vMax = 1.2;
 					fscanf(arq, "%*f %*f");
 		
 			}
