@@ -7,6 +7,9 @@
 #define TAP 1
 #define IMPEDANCIA 0
 
+#define VMIN 0.95
+#define VMAX 1.05
+
 
 int modo;
 
@@ -71,38 +74,6 @@ int carregarnB(FILE * arq){
 	}while(1);
 
 	fseek(arq,-(volta+4),SEEK_CUR);
-	/*nB = volta/(130+sizeof(int)) -1;*/
-
-	/*if (modo == MOD)
-	{
-		do{
-			fscanf(arq,"%d",&nB);
-			
-			
-			fseek(arq,125,SEEK_CUR);
-			volta = volta + 125 + sizeof(nB);
-		}while(nB != -999);
-		
-		
-		fseek(arq,-volta+2,SEEK_CUR);
-		nB = volta/(125+sizeof(int)) -1;
-	}
-	else 
-	{
-		do{
-			fscanf(arq,"%d",&nB);
-			
-			fseek(arq,130,SEEK_CUR);
-			volta = volta + 130 + sizeof(nB);
-		}while(nB != -999);
-		
-		
-		fseek(arq,-volta+2,SEEK_CUR);
-		nB = volta/(130+sizeof(int)) -1;
-	}*/
-	/*getline(&c,&len,arq);
-	printf("%s\n", c);*/
-
 
 	if (c)
 	{
@@ -153,8 +124,8 @@ void carregarBarras(FILE *arq, barra barras [], double baseMVA, int * nPQ, int *
 				barras[i-1].qgMax = barras[i-1].qgMax/baseMVA;
 			}
 
-			barras[i-1].vMin = 0.9;
-			barras[i-1].vMax = 1.2;
+			barras[i-1].vMin = VMIN;
+			barras[i-1].vMax = vMAX;
 
 
 			
@@ -172,8 +143,8 @@ void carregarBarras(FILE *arq, barra barras [], double baseMVA, int * nPQ, int *
 					barras[i-1].qgMin = 0.0;
 					barras[i-1].qgMax = 0.0;
 		
-					barras[i-1].vMin = 0.9;
-					barras[i-1].vMax = 1.2;
+					barras[i-1].vMin = VMIN;
+					barras[i-1].vMax = VMAX;
 					fscanf(arq, "%*f %*f");
 		
 			}
