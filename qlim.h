@@ -1,5 +1,5 @@
 
-void qLimInicio(int nB, int * nPQ, barra barras [], ligacao ligacoes [], lista * listaPQ)
+void qLimInicio(int nB, int * nPQ, int * nPV, barra barras [], ligacao ligacoes [], lista * listaPQ)
 {
 	int k;
 	lista * li;
@@ -10,9 +10,11 @@ void qLimInicio(int nB, int * nPQ, barra barras [], ligacao ligacoes [], lista *
 		{
 			if ((barras[k].v <= barras[k].vEsp && barras[k].qg == barras[k].qgMin) || (barras[k].v >= barras[k].vEsp && barras[k].qg == barras[k].qgMax))
 			{
+				barras[k].v = barras[k].vEsp;
 				barras[k].tipo = 2;
 				removerLista(listaPQ,k);
 				*nPQ = *nPQ - 1;
+				*nPV = *nPV + 1;
 			}
 		}
 
@@ -21,12 +23,25 @@ void qLimInicio(int nB, int * nPQ, barra barras [], ligacao ligacoes [], lista *
 }
 
 
-void qLimFinal(int nB, int * nPQ, barra barras [], ligacao ligacoes [], lista * listaPQ)
+void qLimFinal(int nB, int * nPQ, int * nPV, barra barras [], ligacao ligacoes [], lista * listaPQ)
 {
 	int k;
 	double tKM;
 
+
 	for(k = 0; k < nB; k++){
+		if (barras[k].tipo == 4)
+		{
+			if ((barras[k].v <= barras[k].vEsp && barras[k].qg == barras[k].qgMin) || (barras[k].v >= barras[k].vEsp && barras[k].qg == barras[k].qgMax))
+			{
+				//barras[k].v = barras[k].vEsp;
+				barras[k].tipo = 2;
+				removerLista(listaPQ,k);
+				*nPQ = *nPQ - 1;
+				*nPV = *nPV + 1;
+			}
+		}
+
 		if (barras[k].tipo == 2)
 		{
 			barras[k].qg = 0;
@@ -57,15 +72,18 @@ void qLimFinal(int nB, int * nPQ, barra barras [], ligacao ligacoes [], lista * 
 				barras[k].qg = barras[k].qgMin;
 				barras[k].tipo = 4;
 				inserirLista(listaPQ,k);
-				*nPQ = *nPQ +1;
+				*nPQ = *nPQ + 1;
+				*nPV = *nPV - 1;
 			} else if (barras[k].qg > barras[k].qgMax)
 			{
 				barras[k].qg = barras[k].qgMax;
 				barras[k].tipo = 4;
 				inserirLista(listaPQ,k);
-				*nPQ = *nPQ +1;
+				*nPQ = *nPQ + 1;
+				*nPV = *nPV - 1;
 			}
 		}
 
 	}
+
 }

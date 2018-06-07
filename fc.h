@@ -6,7 +6,8 @@ double fc(int nB, int ref, int * nPQ, int * nPV, double erro, int nMax, barra ba
 	//
 	// RESOLUCAO DO SUBSISTEMA1 PELO METODO DE NEWTON-RAPHSON
 	//
-	int convergiu = calculosSubsistema1(nB, nPQ, nPV, erro, nMax, barras,ligacoes, listaPQ, listaPQPV);
+	int convergiu = calculosSubsistema1(nB,ref,nPQ,nPV,erro,nMax, barras, ligacoes ,listaPQ,listaPQPV);
+
 
 	if (convergiu == 0)
 	{
@@ -17,8 +18,6 @@ double fc(int nB, int ref, int * nPQ, int * nPV, double erro, int nMax, barra ba
 	// RESOLUCAO DO SUBSISTEMA2
 	//
 	calculosSubsistema2(nB,ref,barras,ligacoes);
-
-	printSolucao(nB, barras);
 
 	double perdas = calcPerdas(nB,barras,ligacoes);
 

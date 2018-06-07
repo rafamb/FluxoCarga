@@ -1,11 +1,16 @@
 #include "opMatrizes.h"
 
-void desvioTensao(int nB, barra barras [nB], int * maiorDesvio, double dVc [nB])
+#define SOBRETENSAO -1
+#define SUBTENSAO 1
+#define SEMDESVIO 0
+
+void desvioTensao(int nB, barra barras [nB], int * maiorDesvio, int * tipoDesvio, double dVc [nB])
 {
 	
 	int k;
 	double erro = 0;
 	double eK;
+	int aux;
 	for(k = 0; k < nB; k++)
 	{
 		if (barras[k].tipo != 3 && barras[k].tipo != 2)
@@ -14,13 +19,18 @@ void desvioTensao(int nB, barra barras [nB], int * maiorDesvio, double dVc [nB])
 			if (barras[k].v < barras[k].vMin)
 			{
 				eK = barras[k].vMin - barras[k].v;
+				aux = SUBTENSAO;
 			}
 			else if (barras[k].v > barras[k].vMax)
 			{
 				eK = barras[k].v - barras[k].vMax;
+				aux = SOBRETENSAO;
 			}
 			else
+			{
+				aux = SEMDESVIO;
 				eK = 0.0;
+			}
 
 			dVc[k] = eK;
 
@@ -28,6 +38,7 @@ void desvioTensao(int nB, barra barras [nB], int * maiorDesvio, double dVc [nB])
 			{
 				erro = eK;
 				*maiorDesvio = k;
+				*tipoDesvio = aux;
 			}
 		}
 		else
@@ -230,43 +241,58 @@ void calcDeltaQg(int nB, barra barras [nB],double jqv [nB][nB], double dVc [nB],
 	}
 }
 
-int maxDQ(int nB, barra barras [nB], double dQ [nB])
+int maxDQ(int nB, barra barras [nB], int tipoDesvio, double dQ [nB])
 {
 	int mInd = -1;
 
 	int i;
 	for (i = 0; i < nB; i++)
 	{
-		if (i == 1)
-		{
-			printf("DQ[1] %lf\n", dQ[i]);
-		}
+		
 		if (mInd == -1 && (barras[i].tipo == 3 || barras[i].tipo == 2))
 		{
-			if (barras[i].v > barras[i].vMin && (barras[i].v < barras[i].vMax))
+			if (tipoDesvio == SUBTENSAO)
 			{
-				mInd = i;
+				if (barras[i].v >= barras[i].vMin && (barras[i].v < barras[i].vMax))
+				{
+					mInd = i;
+				}
+			}
+			else
+			{
+				if (barras[i].v > barras[i].vMin && (barras[i].v <= barras[i].vMax))
+				{
+					mInd = i;
+				}
 			}
 		}
 		else if (dQ[i] > dQ[mInd] && (barras[i].tipo == 3 || barras[i].tipo == 2))
 		{
-			if (barras[i].v > barras[i].vMin && (barras[i].v < barras[i].vMax))
+			if (tipoDesvio == SUBTENSAO)
 			{
-				mInd = i;
+				if (barras[i].v >= barras[i].vMin && (barras[i].v < barras[i].vMax))
+				{
+					mInd = i;
+				}
+			}
+			else
+			{
+				if (barras[i].v > barras[i].vMin && (barras[i].v <= barras[i].vMax))
+				{
+					mInd = i;
+				}
 			}
 		}
 		
 	}
 
-	printf("DQMAX[%d] %lf\n", mInd,dQ[mInd]);
-
 	return mInd;
 
 }
 
-int maxQ(int nB, barra barras [nB], double dVc [nB], double dQ [nB], double jqv [nB][nB], double dVg [nB])
+int maxQ(int nB, barra barras [nB], int tipoDesvio, double dVc [nB], double dQ [nB], double jqv [nB][nB], double dVg [nB])
 {
-	int j = maxDQ(nB, barras, dQ);
+	int j = maxDQ(nB, barras, tipoDesvio, dQ);
 	if (j == -1)
 	{
 		return -1;
@@ -277,24 +303,43 @@ int maxQ(int nB, barra barras [nB], double dVc [nB], double dQ [nB], double jqv 
 	return j;
 }
 
-int maxS(int nB, int coluna, barra barras [nB], double s[nB][nB])
+int maxS(int nB, int tipoDesvio, int coluna, barra barras [nB], double s[nB][nB])
 {
 	int i ,j = -1;
 	for (i = 0; i < nB; i ++)
 	{
-		
 		if (j == -1 && (barras[i].tipo == 3 || barras[i].tipo == 2))
 		{
-			if (barras[i].v > barras[i].vMin && (barras[i].v < barras[i].vMax))
+			if (tipoDesvio == SUBTENSAO)
 			{
-				j = i;
+				if (barras[i].v >= barras[i].vMin && (barras[i].v < barras[i].vMax))
+				{
+					j = i;
+				}
+			}
+			else
+			{
+				if (barras[i].v > barras[i].vMin && (barras[i].v <= barras[i].vMax))
+				{
+					j = i;
+				}
 			}
 		}
-		else if (s[i][coluna] > s[j][coluna])
+		else if (s[i][coluna] > s[j][coluna] && (barras[i].tipo == 3 || barras[i].tipo == 2))
 		{
-			if (barras[i].v > barras[i].vMin && (barras[i].v < barras[i].vMax))
+			if (tipoDesvio == SUBTENSAO)
 			{
-				j = i;
+				if (barras[i].v >= barras[i].vMin && (barras[i].v < barras[i].vMax))
+				{
+					j = i;
+				}
+			}
+			else
+			{
+				if (barras[i].v > barras[i].vMin && (barras[i].v <= barras[i].vMax))
+				{
+					j = i;
+				}
 			}
 		}
 	}
@@ -302,22 +347,23 @@ int maxS(int nB, int coluna, barra barras [nB], double s[nB][nB])
 	return j;
 }
 
-int vsf(int nB, barra barras [nB], int maxDVc, double dQ [nB], double jqv [nB][nB], double dVg [nB])
+int vsf(int nB, barra barras [nB], int tipoDesvio, int maxDVc, double dQ [nB], double jqv [nB][nB], double dVg [nB])
 {
 	double s [nB][nB];
 
 	inversaMatriz(nB,jqv,s);
 
-	int j = maxS(nB, maxDVc, barras, s);
+	int j = maxS(nB ,tipoDesvio, maxDVc, barras, s);
 
 	multMatrizVetor(nB, nB,s, dQ, dVg);
 
 	return j;
 }
 
-void atualizarV(barra barras [], int j, double dVg [])
+void atualizarV(barra barras [], int tipoDesvio, int j, double dVg [])
 {
-	double nV = barras[j].v + dVg[j];
+	double nV = barras[j].v + dVg[j]*tipoDesvio;
+	printf("dVG = %lf\n", dVg[j]);
 	if (nV > barras[j].vMax)
 	{
 		barras[j].v = barras[j].vMax;

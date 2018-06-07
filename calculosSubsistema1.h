@@ -3,11 +3,15 @@
 #include "gaussprof.h"
 #include "qlim.h"
 
-int calculosSubsistema1(int nB, int * nPQ, int * nPV, double erro, int nMAX, barra barras [], ligacao ligacoes [], lista * listaPQ, lista * listaPQPV)
+int calculosSubsistema1(int nB,int ref, int * nPQ, int * nPV, double erro, int nMAX, barra barras [], ligacao ligacoes [], lista * listaPQ, lista * listaPQPV)
 {
 
 	int nIteracoes = 0;
 
+	//
+	// APLICA A SOLUCAO INICIAL (V0 = 1.0 E THETA0 = THETA_REF) PARA AS BARRAS PQ (V E THETA) E PV (THETA)
+	//
+	solucaoInicial(barras,nB,ref);
 
 	while(1){
 
@@ -21,17 +25,18 @@ int calculosSubsistema1(int nB, int * nPQ, int * nPV, double erro, int nMAX, bar
 
 		int continua = 0;
 
-
 		//
 		// VERIFICA QUAIS BARRAS QUE VIERAM A SER TORNAR PQ PODEM VOLTAR A SER PV
 		//
-		qLimInicio(nB, nPQ, barras,ligacoes,listaPQ);
+		//qLimInicio(nB, nPQ, nPV, barras,ligacoes,listaPQ);
 
+		
+		int dim = (*nPQ)*2+(*nPV);
 
 		//
 		// CRIACAO DO VETOR DE MISMATCHES
 		//
-		double deltaP_Q [2*(*nPQ)+(*nPV)];
+		double deltaP_Q [dim];
 
 		int i = 0;
 		lista * l;
@@ -60,6 +65,7 @@ int calculosSubsistema1(int nB, int * nPQ, int * nPV, double erro, int nMAX, bar
 		l = listaPQ->prox;
 		while(l != NULL){
 			int k = l->m;
+			
 
 			deltaP_Q[i] = -consQ(k,barras,ligacoes);
 			
@@ -86,18 +92,18 @@ int calculosSubsistema1(int nB, int * nPQ, int * nPV, double erro, int nMAX, bar
 		//
 		// CRIACAO DA MATRIZ JACOBIANA E DO VETOR X
 		//
-		double jac [2*(*nPQ)+(*nPV)][2*(*nPQ)+(*nPV)];		
-		double x [2*(*nPQ)+(*nPV)];
+		double jac [dim][dim];
+		double x [dim];
 		
 		//
 		// CALCULO DOS ELEMENTOS DA MATRIZ JACOBIANA
 		//
-		consSistema(2*(*nPQ)+(*nPV),jac,barras,ligacoes,*listaPQPV,*listaPQ);
+		consSistema(dim,jac,barras,ligacoes,*listaPQPV,*listaPQ);
 
 		//
 		// RESOLUCAO DO SISTEMA LINEAR PELO METODO DE GAUSS, COM O VETOR RESPOSTA SENDO X
 		//
-		gauss_parcial(2*(*nPQ)+(*nPV),jac,deltaP_Q,x);
+		gauss_parcial(dim,jac,deltaP_Q,x);
 
 		lista * li;
 		li = listaPQPV->prox;
@@ -123,8 +129,8 @@ int calculosSubsistema1(int nB, int * nPQ, int * nPV, double erro, int nMAX, bar
 		// VERIFICA QUAIS BARRAS DE GERACAO VIOLARAM OS LIMITES DE GERACAO DE POTENCIA REATIVA,
 		// TRANSFORMANDO-AS ENTAO EM BARRAS PQ
 		//
-		qLimFinal(nB, nPQ, barras,ligacoes,listaPQ);
-		
+		qLimFinal(nB, nPQ, nPV, barras,ligacoes,listaPQ);
+
 
 		nIteracoes++;
 

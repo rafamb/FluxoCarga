@@ -92,12 +92,6 @@ int main(int argc, char *argv[])
 
 
 	//
-	// APLICA A SOLUCAO INICIAL (V0 = 1.0 E THETA0 = THETA_REF) PARA AS BARRAS PQ (V E THETA) E PV (THETA)
-	//
-	solucaoInicial(barras,nB,ref);
-
-
-	//
 	// INICIALIZACAO DO VETOR DE LIGACOES DAS BARRAS
 	//
 	inicializarLigacoes(barras,ligacoes,nB);
@@ -130,16 +124,24 @@ int main(int argc, char *argv[])
 		//
 		// RESOLUCAO DO FLUXO DE CARGA
 		//
-		fc(nB, ref, &nPQ, &nPV, erro, nMax, barras, ligacoes, &listaPQ, &listaPQPV);
+		if (fc(nB, ref, &nPQ, &nPV, erro, nMax, barras, ligacoes, &listaPQ, &listaPQPV) == -999)
+		{
+			printf("O SISTEMA SE TORNOU INSUSTENTAVEL\n");
+			break;
+		}
+
+		printSolucao(nB,barras,baseMVA);
+		
 
 		int barraViolada = -1;
+		int tipoDesvio = 0;
 
 		double dVc [nB];
 
 		//
 		// CALCULO DE dVc
 		//
-		desvioTensao(nB, barras, &barraViolada, dVc);
+		desvioTensao(nB, barras, &barraViolada, &tipoDesvio, dVc);
 
 		//
 		// SE NAO HOUVER BARRAS DE CARGA COM VIOLACOES DE TENSAO O ALGORITMO SE ENCERRA
@@ -150,7 +152,7 @@ int main(int argc, char *argv[])
 			break;
 		}
 
-		printf("Barra %d\n", barraViolada+1);
+		printf("Barra Violada: %d\n", barraViolada+1);
 
 		double jqv [nB][nB];
 		
@@ -172,20 +174,20 @@ int main(int argc, char *argv[])
 
 		if (metodologia == MAXQ)
 		{
-			j = maxQ( nB, barras, dVc , dQ , jqv , dVg );
+			j = maxQ( nB, barras,tipoDesvio, dVc , dQ , jqv , dVg );
 		}
 		else if (metodologia == VSF)
 		{
 
-			j = vsf( nB, barras, barraViolada , dQ , jqv , dVg );
+			j = vsf( nB, barras,tipoDesvio, barraViolada , dQ , jqv , dVg );
 		}
 
-		atualizarV(barras, j, dVg);
+		atualizarV(barras,tipoDesvio, j, dVg);
 
 		printf("NOVO VALOR V%d = %lf\n", j+1,barras[j].v);
 
 		i++;
-		if (i == 4)
+		if (i == 1)
 		{
 			break;
 		}

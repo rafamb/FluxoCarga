@@ -125,7 +125,7 @@ void carregarBarras(FILE *arq, barra barras [], double baseMVA, int * nPQ, int *
 			}
 
 			barras[i-1].vMin = VMIN;
-			barras[i-1].vMax = vMAX;
+			barras[i-1].vMax = VMAX;
 
 
 			
@@ -224,7 +224,16 @@ void carregarLigacoes(FILE *arq,barra barras[], ligacao ligacoes []){
 			novaLigacao->tap = 1.0;
 		}
 
-		/*novaLigacao->tap = 1/novaLigacao->tap;*/
+		if (novaLigacao->tipo != 0)
+		{
+			novaLigacao->bsh = 0.0;
+		}
+		else
+		{
+			novaLigacao->phi = 0.0;
+		}
+
+
 
 		if (novaLigacao->tipo == 2 || novaLigacao->tipo == 3){
 			fscanf(arq,"%lf %lf %lf %lf %lf",&novaLigacao->tapMin,&novaLigacao->tapMax,&novaLigacao->passo,&novaLigacao->ctrlMin,&novaLigacao->ctrlMax);
@@ -313,20 +322,20 @@ void liberarMemoriaLigacoes(ligacao ligacoes [], int nB){
 	}
 }
 
-void printSolucao(int nB, barra barras []){
+void printSolucao(int nB, barra barras [], double baseMVA){
 	int i;
 
-	printf("Barra\tV[p.u.]\t\tAng[rad]\tPg[p.u.]\tQg[p.u.]\tPc[p.u.]\tQc[p.u.]\n");
+	printf("Barra\tV[p.u.]\t\tAng[deg]\tPg[MW]\t\tQg[MVAR]\tPc[MW]\t\tQc[MVAR]\n");
 
 	for(i = 0; i < nB; i++)
 	{
 		printf("%d:\t", i + 1);
-		printf("%lf\t", barras[i].v);
-		printf("%lf\t", barras[i].theta);
-		printf("%lf\t", barras[i].pg);
-		printf("%lf\t", barras[i].qg);
-		printf("%lf\t", barras[i].pc);
-		printf("%lf\n", barras[i].qc);
+		printf("%.6lf\t", barras[i].v);
+		printf("%.6lf\t", barras[i].theta*180/PI);
+		printf("%.6lf\t", barras[i].pg*baseMVA);
+		printf("%.6lf\t", barras[i].qg*baseMVA);
+		printf("%.6lf\t", barras[i].pc*baseMVA);
+		printf("%.6lf\n", barras[i].qc*baseMVA);
 	}
 
 }
